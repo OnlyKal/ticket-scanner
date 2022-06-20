@@ -1,5 +1,6 @@
 
 import 'dart:io';
+import 'package:scanner_haaho/scan.pos.dart';
 import 'scan.camera.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +30,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
-        '/camera': (context) => const Camera()
+        '/camera': (context) => const Camera(),
+        '/pos': (context) => const PosScanner()
       },
       // home: const MyHomePage(title: 'Haaho Scanner Ticket'),
     );
@@ -82,17 +84,18 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               OutlinedButton(
-                onPressed: null,
+                onPressed: ()=>Navigator.pushNamed(context, '/pos'),
                 child: const Text(
-                  'Scann data manually',
+                  'Scan QR Code using POS',
                   style: TextStyle(color: Colors.white),
                 ),
                 style: OutlinedButton.styleFrom(backgroundColor: color),
               ),
+            const  SizedBox(height: 20,),
               OutlinedButton(
                 onPressed: () => Navigator.pushNamed(context, '/camera'),
                 child: const Text(
-                  'Scann with camera',
+                  'Scann QR Code Phone Camera',
                   style: TextStyle(color: Colors.white),
                 ),
                 style: OutlinedButton.styleFrom(backgroundColor: color),

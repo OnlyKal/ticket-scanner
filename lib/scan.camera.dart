@@ -32,109 +32,188 @@ class _CameraState extends State<Camera> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Haaho scanner ticket'),
-        backgroundColor: color,
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            flex: 3,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: (result != null)
-                  ? FutureBuilder(
-                      future: getTicket(result!.code.toString()),
-                      builder: (context, AsyncSnapshot ticket) {
-                        if (ticket.connectionState == ConnectionState.none) {
-                          return const Text('no connection now....');
-                        }
-                        if (ticket.connectionState == ConnectionState.waiting) {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              SizedBox(
-                                height: 13,
-                                width: 13,
-                                child: CircularProgressIndicator(
-                                  backgroundColor: color,
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 8,
-                              ),
-                              Text('Ticket scanned, loading data....')
-                            ],
-                          );
-                        }
-                        if (ticket.connectionState == ConnectionState.active) {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(
-                                Icons.rotate_left_rounded,
-                                size: 18.0,
-                                color: Color.fromARGB(255, 35, 87, 241),
-                              ),
-                              SizedBox(
-                                width: 8,
-                              ),
-                              Text('Connection is activing...!')
-                            ],
-                          );
-                        }
-                        if (ticket.connectionState == ConnectionState.done) {
-                          controller!.stopCamera();
-                          if (ticket.data == null) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
+        appBar: AppBar(
+          title: const Text('Haaho scanner ticket'),
+          backgroundColor: color,
+        ),
+        body: SingleChildScrollView(
+            child: SizedBox(
+          height: MediaQuery.of(context).size.height,
+          width: MediaQuery.of(context).size.width,
+          child: Column(
+            children: <Widget>[
+              (result == null)
+                  ? Expanded(
+                      flex: 2,
+                      child: QRView(
+                        key: qrKey,
+                        onQRViewCreated: _onQRViewCreated,
+                      ),
+                    )
+                  : Container(
+                      height: MediaQuery.of(context).size.height * 0.3,
+                      width: MediaQuery.of(context).size.width,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(83, 245, 226, 185),
+                          // borderRadius: BorderRadius.circular(13),
+                          image: DecorationImage(
+                              fit: BoxFit.cover,
+                              opacity: 0.1,
+                              image: AssetImage('assets/unnamed.png'))),
+                      child: Center(
+                        child: GestureDetector(
+                            child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                              backgroundColor:
+                                  const Color.fromARGB(255, 153, 113, 4)),
+                          onPressed: () {
+                            setState(() {
+                              result = null;
+                            });
+                          },
+                          child: const Text(
+                            'Check new ticket',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        )),
+                      )),
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: (result != null)
+                      ? FutureBuilder(
+                          future: getTicket(result!.code.toString()),
+                          builder: (context, AsyncSnapshot ticket) {
+                            if (ticket.connectionState ==
+                                ConnectionState.none) {
+                              return const Text('no connection now....');
+                            }
+                            if (ticket.connectionState ==
+                                ConnectionState.waiting) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  SizedBox(
+                                    height: 13,
+                                    width: 13,
+                                    child: CircularProgressIndicator(
+                                      backgroundColor: color,
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 8,
+                                  ),
+                                  Text('Please wait, loading data...!')
+                                ],
+                              );
+                            }
+                            if (ticket.connectionState ==
+                                ConnectionState.active) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(
+                                    Icons.rotate_left_rounded,
+                                    size: 18.0,
+                                    color: Color.fromARGB(255, 35, 87, 241),
+                                  ),
+                                  SizedBox(
+                                    width: 8,
+                                  ),
+                                  Text('Connection is activing...!')
+                                ],
+                              );
+                            }
+                            if (ticket.connectionState ==
+                                ConnectionState.done) {
+                              if (ticket.data == null) {
+                                return Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(
-                                      Icons.cancel_sharp,
-                                      size: 18.0,
-                                      color: Color.fromARGB(255, 234, 39, 25),
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(
+                                          Icons.cancel_sharp,
+                                          size: 18.0,
+                                          color:
+                                              Color.fromARGB(255, 234, 39, 25),
+                                        ),
+                                        SizedBox(
+                                          width: 8,
+                                        ),
+                                        Text(
+                                            'No data for this ticket, try again...!')
+                                      ],
                                     ),
-                                    SizedBox(
-                                      width: 8,
+                                    const SizedBox(
+                                      height: 9,
                                     ),
-                                    Text(
-                                        'Sorry,this ticket is not valid, try again...!')
+                                    OutlinedButton(
+                                      onPressed: () => setState(() {
+                                        result = null;
+                                      }),
+                                      child: const Text(
+                                        'Refresh',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                          backgroundColor: color),
+                                    ),
                                   ],
-                                ),
-                                const SizedBox(
-                                  height: 9,
-                                ),
-                                OutlinedButton(
-                                  onPressed: () => controller!.resumeCamera(),
-                                  child: const Text(
-                                    'Refresh',
-                                    style: TextStyle(color: Colors.white),
+                                );
+                              }
+                            }
+                            if (ticket.data['is_used'] == true) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.cancel_sharp,
+                                        size: 18.0,
+                                        color: Color.fromARGB(255, 234, 39, 25),
+                                      ),
+                                      SizedBox(
+                                        width: 8,
+                                      ),
+                                      Text(
+                                          'This ticket is already used, try an other...!')
+                                    ],
                                   ),
-                                  style: OutlinedButton.styleFrom(
-                                      backgroundColor: color),
-                                ),
-                              ],
-                            );
-                          }
-                        }
+                                  const SizedBox(
+                                    height: 9,
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => setState(() {
+                                      // result = null;
+                                    }),
+                                    child: const Text(
+                                      'Refresh',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                        backgroundColor: color),
+                                  ),
+                                ],
+                              );
+                            }
 
-                        return ticket.data['url'] == null
-                            ? Column(
+                            if (ticket.data['url'] == null) {
+                              return Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -159,7 +238,9 @@ class _CameraState extends State<Camera> {
                                     height: 9,
                                   ),
                                   OutlinedButton(
-                                    onPressed: () => controller!.resumeCamera(),
+                                    onPressed: () => setState(() {
+                                      result = null;
+                                    }),
                                     child: const Text(
                                       'Refresh',
                                       style: TextStyle(color: Colors.white),
@@ -168,26 +249,39 @@ class _CameraState extends State<Camera> {
                                         backgroundColor: color),
                                   ),
                                 ],
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.all(6),
+                              );
+                            } else {
+                               cancelTicket(
+                                      ticket.data['url'].toString(), 'true');
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 13, top: 8),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(
-                                      height: 10,
+                                      height: 12,
                                     ),
-                                    Row(
+                                    Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       mainAxisAlignment:
-                                          MainAxisAlignment.start,
+                                          MainAxisAlignment.spaceAround,
                                       children: [
                                         // const Icon(
                                         //   Icons.verified_user_rounded,
                                         //   color: Colors.green,size: 32,
                                         // ),
+                                        const Text(
+                                          'TICKET INFORMATIONS ',
+                                          style: TextStyle(
+                                              color: color,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(
+                                          height: 10,
+                                        ),
                                         Container(
                                           height: 90,
                                           width: 90,
@@ -203,20 +297,19 @@ class _CameraState extends State<Camera> {
                                           ),
                                         ),
                                         const SizedBox(
-                                          width: 5,
+                                          height: 10,
                                         ),
                                         Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           mainAxisAlignment:
-                                              MainAxisAlignment.start,
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               "${ticket.data['event']['name']}",
                                               style: const TextStyle(
-                                                  fontSize: 16,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.green),
+                                                  color: Colors.black),
                                             ),
                                             const SizedBox(
                                               height: 1,
@@ -264,13 +357,13 @@ class _CameraState extends State<Camera> {
                                                         color: Colors.black54),
                                                   ),
                                             const SizedBox(
-                                              height: 8,
+                                              height: 13,
                                             ),
                                             const Text(
-                                              "Client Informations",
+                                              'CLIENT INFORMATIONS ',
                                               style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black),
+                                                  color: color,
+                                                  fontWeight: FontWeight.bold),
                                             ),
                                             const SizedBox(
                                               height: 7,
@@ -280,7 +373,7 @@ class _CameraState extends State<Camera> {
                                               overflow: TextOverflow.ellipsis,
                                               style: const TextStyle(
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.black54),
+                                                  color: Colors.black),
                                             ),
                                             const SizedBox(
                                               height: 3,
@@ -309,45 +402,60 @@ class _CameraState extends State<Camera> {
                                     ),
                                     Row(
                                       children: const [
-                                        Icon(Icons.check_circle,
-                                            color: Colors.green),
+                                        Icon(
+                                          Icons.check_circle,
+                                          color: Colors.green,
+                                          size: 26,
+                                        ),
                                         SizedBox(
                                           width: 5,
                                         ),
                                         Text(
                                           'This Ticket is Valid for the event...!',
-                                          style: TextStyle(color: Colors.green),
+                                          style: TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold),
                                         )
                                       ],
                                     ),
-                                    Row(
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: () {
-                                            setState(() {
-                                              result = null;
-                                            });
-                                          },
-                                          child: const Text(
-                                            'SCAN A NEW TICKET',
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                              backgroundColor: color),
-                                        ),
-                                      ],
-                                    )
                                   ],
                                 ),
                               );
-                      })
-                  : Text(_scanCode),
-            ),
-          )
-        ],
-      ),
-    );
+                            }
+                          })
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                              SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.1,
+                                width: MediaQuery.of(context).size.width * 0.3,
+                                child: Image.asset(
+                                  'assets/nodata.png',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'TICKET INFORMATIONS',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w900),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'Please scan a QR Code to get ticket validity !!',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w300,
+                                    color: Color.fromARGB(255, 99, 98, 98)),
+                              ),
+                            ]),
+                ),
+              )
+            ],
+          ),
+        )));
   }
 
   void _onQRViewCreated(QRViewController controller) {
@@ -375,4 +483,8 @@ class _CameraState extends State<Camera> {
       return null;
     }
   }
+}
+
+Future cancelTicket(url, value) async {
+  await http.put(Uri.parse(url), body: {"is_used": value});
 }
