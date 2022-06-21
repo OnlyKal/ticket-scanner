@@ -122,7 +122,7 @@ class _PosScannerState extends State<PosScanner> {
                                               width: 8,
                                             ),
                                             Text(
-                                                'No data for this ticket, try again...!')
+                                                'This QR Code is not valid for Haaho application...!')
                                           ],
                                         ),
                                         const SizedBox(

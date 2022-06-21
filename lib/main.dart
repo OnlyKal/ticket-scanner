@@ -67,16 +67,27 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Column(
-            children: const [
-              Text(
+            children:  [
+                Container(
+                  height: 100,
+                  width: 100,
+                  decoration: BoxDecoration(
+                       borderRadius: BorderRadius.circular(3),
+                       image:const DecorationImage(image: AssetImage('assets/haaho.png',),fit: BoxFit.cover,)
+                       
+                ),),
+                const  SizedBox(
+                height: 8,
+              ),
+             const Text(
                 'Haaho Scanner Ticket',
                 style: TextStyle(
                     fontSize: 24.0, color: color, fontWeight: FontWeight.bold),
               ),
-              SizedBox(
+            const  SizedBox(
                 height: 8,
               ),
-              Text('Scan a ticket to check davidity to the current Event'),
+             const Text('Scan a ticket to check davidity to the current Event'),
             ],
           ),
           Column(
