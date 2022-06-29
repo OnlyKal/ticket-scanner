@@ -1,18 +1,19 @@
-
 import 'dart:io';
 import 'package:scanner_haaho/scan.pos.dart';
 import 'scan.camera.dart';
 import 'package:flutter/material.dart';
 
-class PostHttpOverrides extends HttpOverrides{
+class PostHttpOverrides extends HttpOverrides {
   @override
-  HttpClient createHttpClient( context){
+  HttpClient createHttpClient(context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port)=> true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
+
 void main() {
-  HttpOverrides.global =  PostHttpOverrides();
+  HttpOverrides.global = PostHttpOverrides();
   runApp(const MyApp());
 }
 
@@ -58,7 +59,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        // appBar: appBar(context, widget.title),
         body: Center(
             child: SizedBox(
       height: MediaQuery.of(context).size.height * 1,
@@ -67,27 +67,34 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Column(
-            children:  [
-                Container(
-                  height: 100,
-                  width: 100,
-                  decoration: BoxDecoration(
-                       borderRadius: BorderRadius.circular(3),
-                       image:const DecorationImage(image: AssetImage('assets/haaho.png',),fit: BoxFit.cover,)
-                       
-                ),),
-                const  SizedBox(
+            children: [
+              Container(
+                height: 100,
+                width: 100,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    image: const DecorationImage(
+                      image: AssetImage(
+                        'assets/haaho.png',
+                      ),
+                      fit: BoxFit.cover,
+                    )),
+              ),
+              const SizedBox(
                 height: 8,
               ),
-             const Text(
+              const Text(
                 'Haaho Scanner Ticket',
                 style: TextStyle(
                     fontSize: 24.0, color: color, fontWeight: FontWeight.bold),
               ),
-            const  SizedBox(
+              const SizedBox(
                 height: 8,
               ),
-             const Text('Scan a ticket to check davidity to the current Event'),
+              const Text(
+                'Scan a ticket to check validity to the current Event',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ],
           ),
           Column(
@@ -95,22 +102,24 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               OutlinedButton(
-                onPressed: ()=>Navigator.pushNamed(context, '/pos'),
+                onPressed: () => Navigator.pushNamed(context, '/pos'),
                 child: const Text(
-                  'Scan QR Code using POS',
+                  'Scan QR CODE',
                   style: TextStyle(color: Colors.white),
                 ),
                 style: OutlinedButton.styleFrom(backgroundColor: color),
               ),
-            const  SizedBox(height: 20,),
-              OutlinedButton(
-                onPressed: () => Navigator.pushNamed(context, '/camera'),
-                child: const Text(
-                  'Scann QR Code Phone Camera',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: OutlinedButton.styleFrom(backgroundColor: color),
+              const SizedBox(
+                height: 20,
               ),
+              // OutlinedButton(
+              //   onPressed: () => Navigator.pushNamed(context, '/camera'),
+              //   child: const Text(
+              //     'Scann QR Code Phone Camera',
+              //     style: TextStyle(color: Colors.white),
+              //   ),
+              //   style: OutlinedButton.styleFrom(backgroundColor: color),
+              // ),
             ],
           ),
           const Text(
@@ -122,3 +131,4 @@ class _MyHomePageState extends State<MyHomePage> {
     )));
   }
 }
+

@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.2
   qr_code_scanner: ^0.7.0
   http: ^0.13.4
+  qr_flutter: ^4.0.0
+  syncfusion_flutter_pdf: ^20.1.61-beta
 
 dev_dependencies:
   flutter_test:
