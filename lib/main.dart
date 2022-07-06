@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:scanner_haaho/pdf.dart';
 import 'package:scanner_haaho/scan.pos.dart';
 import 'scan.camera.dart';
 import 'package:flutter/material.dart';
@@ -31,8 +32,9 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
-        '/camera': (context) => const Camera(),
+        // '/camera': (context) => const Camera(),
         '/pos': (context) => const PosScanner()
+        // '/pdf': (context) => const PDFTicket()
       },
       // home: const MyHomePage(title: 'Haaho Scanner Ticket'),
     );
