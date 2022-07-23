@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:scanner_haaho/pdf.dart';
 import 'package:scanner_haaho/scan.pos.dart';
+import 'package:scanner_haaho/user.login.dart';
 import 'scan.camera.dart';
 import 'package:flutter/material.dart';
 
@@ -25,16 +26,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Haaho',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      // theme: ThemeData(
+      //   primarySwatch: Colors.blue,
+      //   focusColor: color,
+      // ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
+        '/x': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
         // '/camera': (context) => const Camera(),
-        '/pos': (context) => const PosScanner()
-        // '/pdf': (context) => const PDFTicket()
+        '/pos': (context) => const PosScanner(),
+        '/':((context) => const UserLogin())
       },
       // home: const MyHomePage(title: 'Haaho Scanner Ticket'),
     );
