@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
+import 'package:scanner_haaho/details.dart';
 import 'package:scanner_haaho/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class UserLogin extends StatefulWidget {
   const UserLogin({Key? key}) : super(key: key);
@@ -75,7 +80,7 @@ class _UserLoginState extends State<UserLogin> {
                     height: height * 0.06,
                   ),
                   const Text(
-                    'Set your credintials below !',
+                    'Set your credentials below !',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(
@@ -87,8 +92,6 @@ class _UserLoginState extends State<UserLogin> {
                       labelText: 'Set your username',
                       hintText: 'Username',
                       prefixIcon: Icon(Icons.person),
-                      fillColor: color,
-                      focusColor: color,
                       enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(color: color)),
                       border: UnderlineInputBorder(
@@ -101,7 +104,7 @@ class _UserLoginState extends State<UserLogin> {
                     height: height * 0.03,
                   ),
                   TextField(
-                    controller: txtusername,
+                    controller: txtpassword,
                     obscureText: true,
                     decoration: const InputDecoration(
                       labelText: 'Set your password',
@@ -122,11 +125,13 @@ class _UserLoginState extends State<UserLogin> {
                       width: width,
                       height: 53,
                       child: OutlinedButton(
-                        onPressed: null,
+                        onPressed: () =>
+                            _login(context, txtusername.text, txtpassword.text),
                         child: const Text(
-                          'Sign In',style: TextStyle(color: Colors.white,fontSize: 16),
-                        ),style: OutlinedButton.styleFrom(backgroundColor: color),
-                      
+                          'Sign In',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        style: OutlinedButton.styleFrom(backgroundColor: color),
                       ))
                 ],
               ))
@@ -135,5 +140,38 @@ class _UserLoginState extends State<UserLogin> {
         ),
       )),
     );
+  }
+
+  Future _login(context, username, userPassword) async {
+    String serverAddress = 'https://server.haahoevents.com';
+    try {
+      final session = await SharedPreferences.getInstance();
+      var response = await http.post(
+          Uri.parse('$serverAddress/api/events/signin/'),
+          headers: <String, String>{
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(<String, String>{
+            'username': username,
+            'password': userPassword
+          }));
+
+      var data = jsonDecode(response.body);
+      String fullname =
+          '${data['username']} ${data['first_name']} ${data['last_name']}';
+      String? token = data['auth_token'].toString();
+      if (data['auth_token'] == null) {
+        messageError('Faild to logged in! Try again...!');
+      } else {
+        messageSuccess('Success, welcome to Haaho Scanner..!');
+        session.setString('user_token', data['auth_token'].toString());
+        session.setString('user_names', fullname);
+        session.setString('user_phone', data['phone_number'].toString());
+        Navigator.of(context).pushNamed('/pos');
+      }
+    } catch (ex) {
+      debugPrint('SIGNIN : ${ex.toString()}');
+      messageError('Error, no server access...!');
+    }
   }
 }

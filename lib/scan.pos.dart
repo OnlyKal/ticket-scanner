@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/rendering.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -46,6 +44,8 @@ class _PosScannerState extends State<PosScanner> {
       return doc.save();
     });
   }
+
+
 
   String _setdate(timestamp) {
     DateTime date = DateTime.parse(timestamp);

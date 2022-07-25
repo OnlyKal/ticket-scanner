@@ -47,5 +47,9 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Your Description</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<string>YES</string>
 </dict>
 </plist>

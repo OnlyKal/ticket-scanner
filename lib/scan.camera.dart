@@ -252,8 +252,8 @@ class _CameraState extends State<Camera> {
                                 ],
                               );
                             } else {
-                               cancelTicket(
-                                      ticket.data['url'].toString(), 'true');
+                              //  cancelTicket(
+                              //         ticket.data['url'].toString(), 'true');
                               return Padding(
                                 padding:
                                     const EdgeInsets.only(left: 13, top: 8),

@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:scanner_haaho/pdf.dart';
+
 import 'package:scanner_haaho/scan.pos.dart';
-import 'package:scanner_haaho/user.login.dart';
-import 'scan.camera.dart';
 import 'package:flutter/material.dart';
+import 'package:scanner_haaho/user.login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PostHttpOverrides extends HttpOverrides {
   @override
@@ -16,6 +16,7 @@ class PostHttpOverrides extends HttpOverrides {
 
 void main() {
   HttpOverrides.global = PostHttpOverrides();
+  
   runApp(const MyApp());
 }
 
@@ -26,19 +27,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Haaho',
-      // theme: ThemeData(
-      //   primarySwatch: Colors.blue,
-      //   focusColor: color,
-      // ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/x': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
-        // '/camera': (context) => const Camera(),
+        '/z': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
         '/pos': (context) => const PosScanner(),
-        '/':((context) => const UserLogin())
+        '/': (context) => const UserLogin(),
+
+
       },
-      // home: const MyHomePage(title: 'Haaho Scanner Ticket'),
     );
   }
 }
@@ -106,7 +103,11 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               OutlinedButton(
-                onPressed: () => Navigator.pushNamed(context, '/pos'),
+                onPressed: () async{
+                  final userSession = await SharedPreferences.getInstance();
+                  // final String? sessionToken = userSession.getString('user_token');
+                  Navigator.pushNamed(context, '/pos');
+                },
                 child: const Text(
                   'Scan QR CODE',
                   style: TextStyle(color: Colors.white),
@@ -116,14 +117,6 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 20,
               ),
-              // OutlinedButton(
-              //   onPressed: () => Navigator.pushNamed(context, '/camera'),
-              //   child: const Text(
-              //     'Scann QR Code Phone Camera',
-              //     style: TextStyle(color: Colors.white),
-              //   ),
-              //   style: OutlinedButton.styleFrom(backgroundColor: color),
-              // ),
             ],
           ),
           const Text(
@@ -135,4 +128,3 @@ class _MyHomePageState extends State<MyHomePage> {
     )));
   }
 }
-
