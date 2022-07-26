@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:scanner_haaho/scan.pos.dart';
@@ -15,8 +16,9 @@ class PostHttpOverrides extends HttpOverrides {
 }
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = PostHttpOverrides();
-  
+
   runApp(const MyApp());
 }
 
@@ -30,11 +32,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/z': (context) => const MyHomePage(title: 'Haaho Scanner Ticket'),
-        '/pos': (context) => const PosScanner(),
-        '/': (context) => const UserLogin(),
-
-
+        '/': (context) => const MyHomePage(title: 'HAAHO SCANNER'),
+        '/pda': (context) => const PosScanner(),
+        '/signin': (context) => const UserLogin(),
       },
     );
   }
@@ -57,74 +57,81 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  var data;
+   final double _logoSize = 100;
+  Future getSession() async {
+    final session = await SharedPreferences.getInstance();
+    data = {
+      'id': session.getString('id').toString(),
+      'token': session.getString('user_token'),
+      'fullname': session.getString('user_names'),
+      'phone': session.getString('user_phone'),
+    };
+
+    Timer(
+        const Duration(seconds: 3),
+        () => {
+  
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => data['token'] == null
+                    ? const UserLogin()
+                    : const PosScanner()))
+        });
+  }
+
+  @override
+  void initState() {
+    getSession();
+    super.initState();
+  }
+
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: Colors.black,
         body: Center(
             child: SizedBox(
-      height: MediaQuery.of(context).size.height * 1,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Column(
-            children: [
-              Container(
-                height: 100,
-                width: 100,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    image: const DecorationImage(
-                      image: AssetImage(
-                        'assets/haaho.png',
-                      ),
-                      fit: BoxFit.cover,
-                    )),
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              const Text(
-                'Haaho Scanner Ticket',
-                style: TextStyle(
-                    fontSize: 24.0, color: color, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              const Text(
-                'Scan a ticket to check validity to the current Event',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          Column(
+          height: MediaQuery.of(context).size.height * 1,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              OutlinedButton(
-                onPressed: () async{
-                  final userSession = await SharedPreferences.getInstance();
-                  // final String? sessionToken = userSession.getString('user_token');
-                  Navigator.pushNamed(context, '/pos');
-                },
-                child: const Text(
-                  'Scan QR CODE',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: OutlinedButton.styleFrom(backgroundColor: color),
-              ),
-              const SizedBox(
-                height: 20,
+              Column(
+                children: [
+                  AnimatedSize(
+                    curve: Curves.easeIn,
+                    duration: const Duration(seconds: 3),
+                    child: Container(
+                      height: _logoSize,
+                      width: _logoSize,
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          image: const DecorationImage(
+                            image: AssetImage(
+                              'assets/haaho.png',
+                            ),
+                            fit: BoxFit.cover,
+                          )),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  // const Text(
+                  //   'Haaho Events System - Scanner Tickets ',
+                  //   style: TextStyle(
+                  //       fontWeight: FontWeight.w400, color: Colors.white),
+                  // ),
+                ],
               ),
             ],
           ),
-          const Text(
-            'TOGREE COMPANY@2022',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    )));
+        )));
   }
 }

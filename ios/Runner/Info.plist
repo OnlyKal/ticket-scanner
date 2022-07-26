@@ -51,5 +51,7 @@
 	<string>Your Description</string>
 	<key>io.flutter.embedded_views_preview</key>
 	<string>YES</string>
+	<key>NSCameraUsageDescription</key>
+	<string>The porpuse explaining why you will use the camera</string>
 </dict>
 </plist>

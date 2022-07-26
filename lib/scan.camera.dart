@@ -27,7 +27,12 @@ class _CameraState extends State<Camera> {
     // } else if (Platform.isIOS) {
     //   controller!.resumeCamera();
     // }
-    
+  }
+
+  @override
+  void initState() {
+    controller?.resumeCamera();
+    super.initState();
   }
 
   @override
@@ -461,17 +466,19 @@ class _CameraState extends State<Camera> {
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
-
     controller.scannedDataStream.listen((scanData) {
       setState(() {
         result = scanData;
+        debugPrint(result.toString());
       });
     });
   }
 
   @override
   void dispose() {
+    controller?.stopCamera();
     controller?.dispose();
+
     super.dispose();
   }
 

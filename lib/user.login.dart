@@ -167,7 +167,8 @@ class _UserLoginState extends State<UserLogin> {
         session.setString('user_token', data['auth_token'].toString());
         session.setString('user_names', fullname);
         session.setString('user_phone', data['phone_number'].toString());
-        Navigator.of(context).pushNamed('/pos');
+        session.setString('id', data['id'].toString());
+        Navigator.of(context).pushNamed('/pda');
       }
     } catch (ex) {
       debugPrint('SIGNIN : ${ex.toString()}');

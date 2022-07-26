@@ -42,6 +42,7 @@ dependencies:
   scan: ^1.6.0
   shared_preferences: ^2.0.15
   fluttertoast: ^8.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -70,6 +71,7 @@ flutter:
     - assets/unnamed.png
     - assets/nodata.png
     - assets/haaho.png
+    - assets/sorry.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

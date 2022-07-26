@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class PosScanner extends StatefulWidget {
   const PosScanner({Key? key}) : super(key: key);
@@ -21,6 +24,7 @@ class _PosScannerState extends State<PosScanner> {
   var urlvalue = '';
   final GlobalKey<State<StatefulWidget>> _printKey = GlobalKey();
   var _scan = false;
+  var showInput = false;
 
   void _printScreen() {
     Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
@@ -45,7 +49,43 @@ class _PosScannerState extends State<PosScanner> {
     });
   }
 
+  var data;
+  String myToken = '';
+  Future getSession() async {
+    final session = await SharedPreferences.getInstance();
+    data = {
+      'id': session.getString('id').toString(),
+      'token': session.getString('user_token'),
+      'fullname': session.getString('user_names'),
+      'phone': session.getString('user_phone'),
+    };
 
+    setState(() {
+      myToken = data['token'].toString();
+    });
+  }
+
+  Future destroySession() async {
+    final session = await SharedPreferences.getInstance();
+    session.clear();
+    Navigator.of(context).pushNamed('/signin');
+  }
+
+  @override
+  void initState() {
+    getSession();
+    super.initState();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller!.pauseCamera();
+    } else if (Platform.isIOS) {
+      controller!.resumeCamera();
+    }
+  }
 
   String _setdate(timestamp) {
     DateTime date = DateTime.parse(timestamp);
@@ -54,13 +94,94 @@ class _PosScannerState extends State<PosScanner> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    controller?.dispose();
+    txturl.dispose();
+  }
+
+  _desablekey() {
+    FocusScopeNode currentFocus = FocusScope.of(context);
+    if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      // FocusScope.of(context).requestFocus(FocusNode());
+    }
+  }
+
+  var focusNode = FocusNode();
+  bool isSwitched = false;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  Barcode? result;
+  QRViewController? controller;
+  @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('HAAHO SCANNER '),
+        leading: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Container(
+            height: 10,
+            width: 20,
+            child: const Icon(
+              Icons.person,
+              color: color,
+              size: 16,
+            ),
+            decoration: BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.circular(100)),
+          ),
+        ),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 0, right: 0),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 12,
+              ),
+              Text(
+                data == null ? 'Haaho Event' : data['fullname'],
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w300),
+              )
+            ],
+          ),
+        ),
+        actions: [
+          IconButton(
+              onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      content: const Text(
+                          'Are you sure you want to disconnect your account ...?'),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text(
+                              'CANCEL',
+                              style:
+                                  TextStyle(fontSize: 15, color: Colors.black),
+                            )),
+                        TextButton(
+                            onPressed: () => destroySession(),
+                            child: const Text(
+                              'YES',
+                              style:
+                                  TextStyle(fontSize: 15, color: Colors.black),
+                            ))
+                      ],
+                    );
+                  }),
+              icon: const Icon(
+                Icons.logout_rounded,
+                color: Colors.white,
+              ))
+        ],
         backgroundColor: color,
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -71,18 +192,70 @@ class _PosScannerState extends State<PosScanner> {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextField(
-                  controller: txturl,
-                  cursorColor: color,
-                  style: const TextStyle(
-                      color: Color.fromARGB(79, 35, 35, 35), fontSize: 10),
-                  decoration: const InputDecoration(
-                      focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: color))),
-                  onChanged: (text) => setState(() {
-                        urlvalue = text.toString();
-                        _scan = true;
-                      })),
+              showInput == false
+                  ? const Text('')
+                  : Column(children: [
+                      Row(
+                        children: [
+                          Switch(
+                            value: isSwitched,
+                            onChanged: (value) {
+                              setState(() {
+                                isSwitched = value;
+                              });
+                            },
+                            activeTrackColor:
+                                const Color.fromARGB(255, 242, 185, 92),
+                            activeColor: color,
+                          ),
+                          const Text('Camera')
+                        ],
+                      ),
+                      SizedBox(
+                        height: 10,
+                        child: TextField(
+                            controller: txturl,
+                            cursorColor: Colors.white,
+                            onTap: () {
+                              _desablekey();
+                            },
+                            focusNode: focusNode,
+                            style: const TextStyle(
+                                color: Color.fromARGB(79, 35, 35, 35),
+                                fontSize: 10),
+                            decoration: const InputDecoration(
+                              focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide.none),
+                              enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide.none),
+                              border: UnderlineInputBorder(
+                                  borderSide: BorderSide.none),
+                            ),
+                            onChanged: (text) => setState(() {
+                                  urlvalue = text.toString();
+                                  _scan = true;
+                                  focusNode.requestFocus();
+                                })),
+                      ),
+                      isSwitched
+                          ? Container(
+                              width: width,
+                              height: height * .36,
+                              color: Colors.black,
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  child: QRView(
+                                    key: qrKey,
+                                    onQRViewCreated: _onQRViewCreated,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : const Text('')
+                    ]),
               Expanded(
                 flex: 2,
                 child: Center(
@@ -90,6 +263,7 @@ class _PosScannerState extends State<PosScanner> {
                       ? FutureBuilder(
                           future: getTicket(urlvalue),
                           builder: (context, AsyncSnapshot ticket) {
+                            showInput = false;
                             if (ticket.connectionState ==
                                 ConnectionState.none) {
                               return const Text('no connection now....');
@@ -139,6 +313,8 @@ class _PosScannerState extends State<PosScanner> {
                             }
                             if (ticket.connectionState ==
                                 ConnectionState.done) {
+                              showInput = false;
+                              _desablekey();
                               if (ticket.data == null) {
                                 return RepaintBoundary(
                                     key: _printKey,
@@ -146,22 +322,22 @@ class _PosScannerState extends State<PosScanner> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.center,
                                       mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                          MainAxisAlignment.start,
                                       children: [
-                                        Row(
+                                        Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.center,
                                           mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                              MainAxisAlignment.start,
                                           children: [
                                             const Icon(
                                               Icons.cancel_sharp,
-                                              size: 18.0,
+                                              size: 36.0,
                                               color: Color.fromARGB(
                                                   255, 234, 39, 25),
                                             ),
                                             const SizedBox(
-                                              width: 8,
+                                              height: 14,
                                             ),
                                             txturl.text == ''
                                                 ? const Text(
@@ -172,19 +348,6 @@ class _PosScannerState extends State<PosScanner> {
                                         ),
                                         const SizedBox(
                                           height: 9,
-                                        ),
-                                        OutlinedButton(
-                                          onPressed: () => setState(() {
-                                            _scan = false;
-                                            txturl.text = '';
-                                          }),
-                                          child: const Text(
-                                            'Scann new ticket',
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                              backgroundColor: color),
                                         ),
                                       ],
                                     ));
@@ -197,22 +360,22 @@ class _PosScannerState extends State<PosScanner> {
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      Row(
+                                      Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
                                           const Icon(
-                                            Icons.cancel_sharp,
-                                            size: 18.0,
+                                            Icons.stop_screen_share_sharp,
+                                            size: 36.0,
                                             color: Color.fromARGB(
-                                                255, 234, 39, 25),
+                                                255, 136, 241, 16),
                                           ),
                                           const SizedBox(
-                                            width: 8,
+                                            height: 14,
                                           ),
                                           txturl.text == ''
                                               ? const Text(
@@ -224,18 +387,6 @@ class _PosScannerState extends State<PosScanner> {
                                       const SizedBox(
                                         height: 9,
                                       ),
-                                      OutlinedButton(
-                                        onPressed: () => setState(() {
-                                          _scan = false;
-                                          txturl.text = '';
-                                        }),
-                                        child: const Text(
-                                          'Scann new ticket',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                            backgroundColor: color),
-                                      ),
                                     ],
                                   ));
                             }
@@ -246,9 +397,9 @@ class _PosScannerState extends State<PosScanner> {
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      Row(
+                                      Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
                                         mainAxisAlignment:
@@ -256,12 +407,12 @@ class _PosScannerState extends State<PosScanner> {
                                         children: [
                                           const Icon(
                                             Icons.cancel_sharp,
-                                            size: 18.0,
+                                            size: 36.0,
                                             color: Color.fromARGB(
                                                 255, 234, 39, 25),
                                           ),
                                           const SizedBox(
-                                            width: 8,
+                                            height: 14,
                                           ),
                                           txturl.text == ''
                                               ? const Text(
@@ -273,27 +424,10 @@ class _PosScannerState extends State<PosScanner> {
                                       const SizedBox(
                                         height: 9,
                                       ),
-                                      OutlinedButton(
-                                        onPressed: () => setState(() {
-                                          _scan = false;
-
-                                          txturl.text = '';
-                                        }),
-                                        child: const Text(
-                                          'Scann new ticket',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                            backgroundColor: color),
-                                      ),
                                     ],
                                   ));
                             } else {
-                              // SchedulerBinding.instance
-                              //     ?.addPersistentFrameCallback((_) => {
-
-                              // });
-                              debugPrint(ticket.data['url'].toString());
+                              // controller?.stopCamera();
                               return Padding(
                                 padding: const EdgeInsets.only(left: 0, top: 0),
 
@@ -303,454 +437,383 @@ class _PosScannerState extends State<PosScanner> {
                                   children: [
                                     RepaintBoundary(
                                       key: _printKey,
-                                      child: Container(
-                                          decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  width: 1, color: color)),
-                                          child: Column(
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(
+                                            height: 12,
+                                          ),
+                                          Column(
                                             children: [
-                                              const SizedBox(
-                                                height: 12,
+                                              const Text(
+                                                'TICKET INFORMATIONS ',
+                                                style: TextStyle(
+                                                    color: color,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 20),
                                               ),
-                                              Column(
-                                                children: [
-                                                  const Text(
-                                                    'TICKET INFORMATIONS ',
-                                                    style: TextStyle(
-                                                        color: color,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 20),
-                                                  ),
-                                                  const SizedBox(
-                                                    height: 2,
-                                                  ),
-                                                  QrImage(
-                                                    data: txturl.text,
-                                                    version: QrVersions.auto,
-                                                    size: kIsWeb ? 170.0 : 100,
-                                                  ),
-                                                  const SizedBox(
-                                                    height: 5,
-                                                  ),
-                                                  Container(
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                            .size
-                                                            .width,
-                                                    child: Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              top: 15,
-                                                              bottom: 15),
-                                                      child: Row(
+                                              const SizedBox(
+                                                height: 2,
+                                              ),
+                                              QrImage(
+                                                data: txturl.text,
+                                                version: QrVersions.auto,
+                                                size: kIsWeb ? 170.0 : 100,
+                                              ),
+                                              const SizedBox(
+                                                height: 5,
+                                              ),
+                                              Container(
+                                                width: MediaQuery.of(context)
+                                                    .size
+                                                    .width,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 15, bottom: 15),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceAround,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Column(
                                                         mainAxisAlignment:
                                                             MainAxisAlignment
-                                                                .spaceAround,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .center,
+                                                                .spaceBetween,
                                                         children: [
-                                                          Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceBetween,
-                                                            children: [
-                                                              const Text(
-                                                                'TICKET TYPE',
-                                                                style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w300,
-                                                                    color: Color
-                                                                        .fromARGB(
-                                                                            255,
-                                                                            229,
-                                                                            220,
-                                                                            193)),
-                                                              ),
-                                                              Text(
-                                                                  ticket.data[
-                                                                          'ticket_type']
-                                                                      .toUpperCase(),
-                                                                  style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                      color: Colors
-                                                                          .white))
-                                                            ],
+                                                          const Text(
+                                                            'TICKET TYPE',
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w300,
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        229,
+                                                                        220,
+                                                                        193)),
                                                           ),
-                                                          Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceBetween,
-                                                            children: [
-                                                              const Text(
-                                                                'TICKETS',
-                                                                style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w300,
-                                                                    color: Color
-                                                                        .fromARGB(
-                                                                            255,
-                                                                            229,
-                                                                            220,
-                                                                            193)),
-                                                              ),
-                                                              Text(
-                                                                  ticket.data[
-                                                                          'quantity']
-                                                                      .toString(),
-                                                                  style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                      color: Colors
-                                                                          .white))
-                                                            ],
-                                                          ),
-                                                          Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceBetween,
-                                                            children: [
-                                                              const Text(
-                                                                'TOTAL PAID',
-                                                                style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w300,
-                                                                    color: Color
-                                                                        .fromARGB(
-                                                                            255,
-                                                                            229,
-                                                                            220,
-                                                                            193)),
-                                                              ),
-                                                              ticket.data['payment_method'] !=
-                                                                      "coins"
-                                                                  ? Text(
-                                                                      " ${ticket.data['amount']} ¥ ",
-                                                                      style: const TextStyle(
-                                                                          fontWeight: FontWeight
-                                                                              .bold,
-                                                                          color: Colors
-                                                                              .white))
-                                                                  : Text(
-                                                                      " ${ticket.data['amount']} Coins ",
-                                                                      style: const TextStyle(
-                                                                          fontWeight: FontWeight
-                                                                              .bold,
-                                                                          color:
-                                                                              Colors.white))
-                                                            ],
-                                                          ),
+                                                          Text(
+                                                              ticket
+                                                                  .data[
+                                                                      'ticket_type']
+                                                                  .toUpperCase(),
+                                                              style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color: Colors
+                                                                      .white))
                                                         ],
                                                       ),
-                                                    ),
-                                                    color: color,
-                                                  ),
-                                                  const SizedBox(
-                                                    height: 14,
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        const Text('Title'),
-                                                        const SizedBox(
-                                                          height: 5,
-                                                        ),
-                                                        Text(
-                                                          "${ticket.data['event']['name']}",
-                                                          style:
-                                                              const TextStyle(
+                                                      Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(
+                                                            'TICKETS',
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w300,
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        229,
+                                                                        220,
+                                                                        193)),
+                                                          ),
+                                                          Text(
+                                                              ticket
+                                                                  .data[
+                                                                      'quantity']
+                                                                  .toString(),
+                                                              style: const TextStyle(
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .bold,
                                                                   color: Colors
-                                                                      .black),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 14,
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            Column(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              children: [
-                                                                const Text(
-                                                                  'Place',
-                                                                  style: TextStyle(
+                                                                      .white))
+                                                        ],
+                                                      ),
+                                                      Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          const Text(
+                                                            'TOTAL PAID',
+                                                            style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w300,
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        229,
+                                                                        220,
+                                                                        193)),
+                                                          ),
+                                                          ticket.data['payment_method'] !=
+                                                                  "coins"
+                                                              ? Text(
+                                                                  " ${ticket.data['amount']} ¥ ",
+                                                                  style: const TextStyle(
                                                                       fontWeight:
                                                                           FontWeight
-                                                                              .w200,
-                                                                      color: Colors
-                                                                          .black),
-                                                                ),
-                                                                Text(
-                                                                    "${ticket.data['event']['place']}",
-                                                                    style: const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .bold,
-                                                                        color:
-                                                                            color))
-                                                              ],
-                                                            ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                          .only(
-                                                                      left: 20),
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .spaceBetween,
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  const Text(
-                                                                    'Date',
-                                                                    style: TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .w200,
-                                                                        color: Colors
-                                                                            .black),
-                                                                  ),
-                                                                  Text(
-                                                                      _setdate(ticket
-                                                                              .data['event']
-                                                                          [
-                                                                          'date_time']),
-                                                                      style: const TextStyle(
-                                                                          fontWeight: FontWeight
                                                                               .bold,
-                                                                          color:
-                                                                              color))
-                                                                ],
-                                                              ),
-                                                            )
-                                                          ],
-                                                        ),
-                                                      ],
+                                                                      color: Colors
+                                                                          .white))
+                                                              : Text(
+                                                                  " ${ticket.data['amount']} Coins ",
+                                                                  style: const TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: Colors
+                                                                          .white))
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                color: color,
+                                              ),
+                                              const SizedBox(
+                                                height: 14,
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    const Text('Title'),
+                                                    const SizedBox(
+                                                      height: 5,
                                                     ),
-                                                  ),
-                                                  Container(
-                                                    height: 11,
-                                                    width:
-                                                        MediaQuery.of(context)
-                                                            .size
-                                                            .width,
-                                                    color: const Color.fromARGB(
-                                                        255, 160, 151, 126),
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .start,
+                                                    Text(
+                                                      "${ticket.data['event']['name']}",
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.black),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 14,
+                                                    ),
+                                                    Row(
                                                       children: [
-                                                        const Text('Fullname'),
-                                                        const SizedBox(
-                                                          height: 5,
-                                                        ),
-                                                        Text(
-                                                          "${ticket.data['owner']['first_name']} ${ticket.data['owner']['last_name']} ${ticket.data['owner']['username']}",
-                                                          style:
-                                                              const TextStyle(
+                                                        Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            const Text(
+                                                              'Place',
+                                                              style: TextStyle(
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .bold,
+                                                                          .w200,
                                                                   color: Colors
                                                                       .black),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 14,
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            Column(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .spaceBetween,
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              children: [
-                                                                const Text(
-                                                                  'Phone',
-                                                                  style: TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w200,
-                                                                      color: Colors
-                                                                          .black),
-                                                                ),
-                                                                Text(
-                                                                    "${ticket.data['owner']['phone_number']}",
-                                                                    style: const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .bold,
-                                                                        color:
-                                                                            color))
-                                                              ],
                                                             ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                          .only(
-                                                                      left: 20),
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .spaceBetween,
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  const Text(
-                                                                    'Email',
-                                                                    style: TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight
-                                                                                .w200,
-                                                                        color: Colors
-                                                                            .black),
-                                                                  ),
-                                                                  Text(
-                                                                      "${ticket.data['owner']['email']}",
-                                                                      style: const TextStyle(
-                                                                          fontWeight: FontWeight
-                                                                              .bold,
-                                                                          color:
-                                                                              color))
-                                                                ],
-                                                              ),
-                                                            )
+                                                            Text(
+                                                                "${ticket.data['event']['place']}",
+                                                                style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color:
+                                                                        color))
                                                           ],
                                                         ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                      .only(
+                                                                  left: 20),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              const Text(
+                                                                'Date',
+                                                                style: TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w200,
+                                                                    color: Colors
+                                                                        .black),
+                                                              ),
+                                                              Text(
+                                                                  _setdate(ticket
+                                                                              .data[
+                                                                          'event']
+                                                                      [
+                                                                      'date_time']),
+                                                                  style: const TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color:
+                                                                          color))
+                                                            ],
+                                                          ),
+                                                        )
                                                       ],
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                              const SizedBox(
-                                                height: 8,
+                                              Container(
+                                                height: 11,
+                                                width: MediaQuery.of(context)
+                                                    .size
+                                                    .width,
+                                                color: const Color.fromARGB(
+                                                    255, 160, 151, 126),
                                               ),
-                                              Row(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: const [
-                                                  Icon(
-                                                    Icons.check_circle,
-                                                    color: Colors.green,
-                                                    size: 26,
-                                                  ),
-                                                  SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Text(
-                                                    'This Ticket is Valid for the event...!',
-                                                    style: TextStyle(
-                                                        color: Colors.green,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  )
-                                                ],
-                                              ),
-                                              const SizedBox(
-                                                height: 10,
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  children: [
+                                                    const Text('Fullname'),
+                                                    const SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    Text(
+                                                      "${ticket.data['owner']['first_name']} ${ticket.data['owner']['last_name']} ${ticket.data['owner']['username']}",
+                                                      style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.black),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 14,
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            const Text(
+                                                              'Phone',
+                                                              style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w200,
+                                                                  color: Colors
+                                                                      .black),
+                                                            ),
+                                                            Text(
+                                                                "${ticket.data['owner']['phone_number']}",
+                                                                style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    color:
+                                                                        color))
+                                                          ],
+                                                        ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                      .only(
+                                                                  left: 20),
+                                                          child: Column(
+                                                            mainAxisAlignment:
+                                                                MainAxisAlignment
+                                                                    .spaceBetween,
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              const Text(
+                                                                'Email',
+                                                                style: TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w200,
+                                                                    color: Colors
+                                                                        .black),
+                                                              ),
+                                                              Text(
+                                                                  "${ticket.data['owner']['email']}",
+                                                                  style: const TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color:
+                                                                          color))
+                                                            ],
+                                                          ),
+                                                        )
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ],
-                                          )),
+                                          ),
+                                          const SizedBox(
+                                            height: 8,
+                                          ),
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: const [
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.green,
+                                                size: 26,
+                                              ),
+                                              SizedBox(
+                                                width: 5,
+                                              ),
+                                              Text(
+                                                'This Ticket is Valid for the event...!',
+                                                style: TextStyle(
+                                                    color: Colors.green,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              )
+                                            ],
+                                          ),
+                                          const SizedBox(
+                                            height: 10,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     const SizedBox(
                                       height: 10,
-                                    ),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: () => showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                return AlertDialog(
-                                                  title: const Text(
-                                                      "Ticket warning"),
-                                                  content: const Text(
-                                                      "By confirming, you will cancel the current ticket... do you want to continue? ?"),
-                                                  actions: [
-                                                    TextButton(
-                                                        onPressed: () {
-                                                          Navigator.pop(
-                                                              context);
-                                                        },
-                                                        child: const Text(
-                                                          'Cancel',
-                                                          style: TextStyle(
-                                                              color: color),
-                                                        )),
-                                                    TextButton(
-                                                        onPressed: () =>
-                                                            setState(() {
-                                                              _scan = false;
-
-                                                              txturl.text = '';
-                                                              // cancelTicket(
-                                                              //     ticket.data['url'].toString(),
-                                                              //     'true');
-                                                              Navigator.pop(
-                                                                  context);
-                                                            }),
-                                                        child: const Text(
-                                                          'Confirm',
-                                                          style: TextStyle(
-                                                              color: color),
-                                                        ))
-                                                  ],
-                                                );
-
-                                                // TATATATA
-                                              }),
-                                          child: const Text(
-                                            'Scan new ticket',
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                              backgroundColor: color),
-                                        )
-                                      ],
                                     ),
                                   ],
                                 ),
@@ -793,31 +856,58 @@ class _PosScannerState extends State<PosScanner> {
           ),
         )),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: (() {
+          setState(() {
+            _scan = false;
+            showInput = true;
+            txturl.text = '';
+            focusNode.requestFocus();
+          });
+        }),
+        child: const Icon(Icons.qr_code_scanner_sharp),
+        backgroundColor: color,
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    txturl.dispose();
-    super.dispose();
+  void _onQRViewCreated(QRViewController controller) {
+    this.controller = controller;
+    controller.scannedDataStream.listen((scanData) {
+      setState(() {
+        result = scanData;
+      });
+    });
   }
-}
 
-Future cancelTicket(url, value) async {
-  try {
-    await http.put(Uri.parse(url), body: {"is_used": value});
-  } catch (ex) {
-    //  debugPrint('EXCEPTION ====================$ex');
-    return null;
+  Future cancelTicket(url, value) async {
+    try {
+      await http.put(Uri.parse(url), headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${data['token'].toString()}'
+      }, body: {
+        "is_used": value
+      });
+    } catch (ex) {
+      //  debugPrint('EXCEPTION ====================$ex');
+      return null;
+    }
   }
-}
 
-Future getTicket(api) async {
-  try {
-    var response = await http.get(Uri.parse(api));
-    return jsonDecode(response.body);
-  } catch (ex) {
-    //  debugPrint('EXCEPTION ====================$ex');
-    return null;
+  Future getTicket(api) async {
+    try {
+      var response = await http.get(
+        Uri.parse(api),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Token ${data['token'].toString()}'
+        },
+      );
+      _desablekey();
+      return jsonDecode(response.body);
+    } catch (ex) {
+      //  debugPrint('EXCEPTION ====================$ex');
+      return null;
+    }
   }
 }
