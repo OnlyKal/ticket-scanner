@@ -10,7 +10,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+// import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class PosScanner extends StatefulWidget {
   const PosScanner({Key? key}) : super(key: key);
@@ -78,15 +78,14 @@ class _PosScannerState extends State<PosScanner> {
     super.initState();
   }
 
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller!.resumeCamera();
-    }
-  }
+  // void reassemble() {
+  //   super.reassemble();
+  //   if (Platform.isAndroid) {
+  //     controller!.pauseCamera();
+  //   } else if (Platform.isIOS) {
+  //     controller!.resumeCamera();
+  //   }
+  // }
 
   String _setdate(timestamp) {
     DateTime date = DateTime.parse(timestamp);
@@ -97,7 +96,7 @@ class _PosScannerState extends State<PosScanner> {
   @override
   void dispose() {
     super.dispose();
-    controller?.dispose();
+    // controller?.dispose();
     txturl.dispose();
   }
 
@@ -122,8 +121,8 @@ final MethodChannel _methodChannel =
   var focusNode = FocusNode();
   bool isSwitched = false;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  Barcode? result;
-  QRViewController? controller;
+  // Barcode? result;
+  // QRViewController? controller;
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height;
@@ -259,17 +258,17 @@ final MethodChannel _methodChannel =
                               width: width,
                               height: height * .36,
                               color: Colors.black,
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  child: QRView(
-                                    key: qrKey,
-                                    onQRViewCreated: _onQRViewCreated,
-                                  ),
-                                ),
-                              ),
+                              // child: Padding(
+                              //   padding: const EdgeInsets.all(20),
+                              //   child: Container(
+                              //     decoration: BoxDecoration(
+                              //         borderRadius: BorderRadius.circular(12)),
+                              //     child: QRView(
+                              //       key: qrKey,
+                              //       onQRViewCreated: _onQRViewCreated,
+                              //     ),
+                              //   ),
+                              // ),
                             )
                           : const Text('')
                     ]),
@@ -888,14 +887,14 @@ final MethodChannel _methodChannel =
     );
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
-      });
-    });
-  }
+  // void _onQRViewCreated(QRViewController controller) {
+  //   this.controller = controller;
+  //   controller.scannedDataStream.listen((scanData) {
+  //     setState(() {
+  //       result = scanData;
+  //     });
+  //   });
+  // }
 
   Future cancelTicket(url, value) async {
     try {
