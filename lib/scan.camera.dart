@@ -478,7 +478,6 @@ class _CameraState extends State<Camera> {
   void dispose() {
     controller?.stopCamera();
     controller?.dispose();
-
     super.dispose();
   }
 
