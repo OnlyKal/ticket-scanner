@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:pdf/pdf.dart';
@@ -108,6 +109,16 @@ class _PosScannerState extends State<PosScanner> {
     }
   }
 
+final MethodChannel _methodChannel =
+      const MethodChannel('channel.haaho');
+  Future posPrint() async {
+    try {
+      await _methodChannel.invokeMethod("print-ticket");
+    } on PlatformException catch (e) {
+      print("exceptiong");
+    }
+  }
+
   var focusNode = FocusNode();
   bool isSwitched = false;
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
@@ -151,6 +162,11 @@ class _PosScannerState extends State<PosScanner> {
         ),
         actions: [
           IconButton(
+              onPressed: () {
+                posPrint();
+              },
+              icon: const Icon(Icons.print)),
+          IconButton(
               onPressed: () => showDialog(
                   context: context,
                   builder: (context) {
@@ -162,8 +178,9 @@ class _PosScannerState extends State<PosScanner> {
                             onPressed: () => Navigator.of(context).pop(),
                             child: const Text(
                               'CANCEL',
-                              style:
-                                  TextStyle(fontSize: 15, color: Colors.black),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: Color.fromARGB(255, 72, 71, 71)),
                             )),
                         TextButton(
                             onPressed: () => destroySession(),
